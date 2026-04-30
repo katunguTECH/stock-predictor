@@ -9,7 +9,7 @@ symbol = st.text_input("Symbol", "AAPL").upper()
 period = st.selectbox("Period", ["1d", "5d", "1mo", "3mo", "6mo", "1y"], index=2)
 
 if symbol:
-    with st.spinner("Fetching..."):
+    with st.spinner("Loading..."):
         try:
             data = yf.download(symbol, period=period, progress=False)
             if data.empty:
