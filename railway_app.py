@@ -9,14 +9,14 @@ symbol = st.text_input("Symbol", "AAPL").upper()
 period = st.selectbox("Period", ["1d", "5d", "1mo", "3mo", "6mo", "1y"], index=2)
 
 if symbol:
-    with st.spinner("Fetching data..."):
+    with st.spinner("Fetching..."):
         try:
             data = yf.download(symbol, period=period, progress=False)
             if data.empty:
-                st.error("No data found")
+                st.error("No data")
             else:
                 st.metric("Latest Close", f"${data['Close'].iloc[-1]:.2f}")
                 st.line_chart(data['Close'])
                 st.dataframe(data.tail(10))
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(str(e))
