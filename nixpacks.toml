@@ -1,11 +1,11 @@
-﻿[phases.setup]
+[phases.setup]
 nixPkgs = ["python311", "python311Packages.pip"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
 
 [phases.start]
-cmd = "streamlit run railway_app.py --server.port \ --server.address 0.0.0.0"
+cmd = "streamlit run railway_app.py --server.port $PORT --server.address 0.0.0.0"
 
 [variables]
 PYTHONUNBUFFERED = "1"
