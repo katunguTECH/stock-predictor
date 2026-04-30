@@ -1,0 +1,103 @@
+Alpha Vantage API key: 4MKUNQ1QNML73LA
+
+Polygon API key: g3g8NfkMJ9Up8obFU2pY70y0qW4WyzMG
+
+"""
+Unified Market Data Client
+Uses Alpha Vantage, Polygon.io, and FCS API with automatic failover
+"""
+
+import os
+import time
+from datetime import datetime
+from dotenv import load_dotenv
+import requests
+
+load_dotenv()
+
+class MarketDataClient:
+    def __init__(self):
+        self.alpha_key = os.getenv('4MKUNQ1QNML73LA')
+        self.polygon_key = os.getenv('g3g8NfkMJ9Up8obFU2pY70y0qW4WyzMG')
+        self.fcs_key = os.getenv('FCS_API_KEY')
+        
+        self.last_call_time = 0
+        self.min_call_interval = 12  # 5 calls per minute = 12 seconds between calls
+        
+    def _rate_limit(self):
+        """Ensure we don't exceed rate limits"""
+        elapsed = time.time() - self.last_call_time
+        if elapsed < self.min_call_interval:
+            time.sleep(self.min_call_interval - elapsed)
+        self.last_call_time = time.time()
+    
+    def get_stock_price_alpha(self, symbol):
+        """Get price from Alpha Vantage"""
+        self._rate_limit()
+        url = "https://www.alphavantage.co/query"
+        params = {
+            'function': 'GLOBAL_QUOTE',
+            'symbol': symbol,
+            'apikey': self.alpha_key
+        }
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        quote = data.get('Global Quote', {})
+        if quote:
+            return {
+                'source': 'Alpha Vantage',
+                'price': float(quote.get('05. price', 0)),
+                'symbol': quote.get('01. symbol', symbol)
+            }
+        return None
+    
+    def get_stock_price_fcs(self, symbol):
+        """Get price from FCS API"""
+        url = "https://api-v4.fcsapi.com/stock/quote"
+        params = {
+            'symbol': symbol,
+            'access_key': self.fcs_key
+        }
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        if data.get('status'):
+            quote = data.get('response', [{}])[0]
+            return {
+                'source': 'FCS API',
+                'price': float(quote.get('c', 0)),
+                'symbol': quote.get('s', symbol)
+            }
+        return None
+    
+    def get_stock_price(self, symbol):
+        """Get stock price with automatic failover"""
+        # Try Alpha Vantage first (best free tier: 500/day)
+        result = self.get_stock_price_alpha(symbol)
+        if result and result['price'] > 0:
+            return result
+        
+        # Fallback to FCS API
+        result = self.get_stock_price_fcs(symbol)
+        if result and result['price'] > 0:
+            return result
+        
+        return {'source': None, 'price': 0, 'symbol': symbol, 'error': 'All APIs failed'}
+    
+    def get_multi_stock_prices(self, symbols):
+        """Get prices for multiple symbols"""
+        results = []
+        for symbol in symbols:
+            price_data = self.get_stock_price(symbol)
+            results.append(price_data)
+        return results
+
+# Test
+if __name__ == "__main__":
+    client = MarketDataClient()
+    print("\n📊 Testing unified market data client...")
+    
+    price = client.get_stock_price('AAPL')
+    print(f"   Source: {price['source']}")
+    print(f"   Price: ${price['price']:.2f}")
