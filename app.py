@@ -47,10 +47,17 @@ def index():
     try:
         df = yf.download(symbol, period=period, progress=False)
         if df.empty:
-            error = "No data"
+            error = "No data found"
         else:
-            latest = f"{df['Close'].iloc[-1]:.2f}"
-            table = df[['Close', 'Volume']].tail(10).to_html()
+            latest_price = df['Close'].iloc[-1]
+            if hasattr(latest_price, 'item'):
+                latest_price = latest_price.item()
+            else:
+                latest_price = float(latest_price)
+            latest = f"{latest_price:.2f}"
+            df_display = df[['Close', 'Volume']].tail(10).copy()
+            df_display.index = df_display.index.strftime('%Y-%m-%d')
+            table = df_display.to_html(classes='dataframe', border=1)
     except Exception as e:
         error = str(e)
     return render_template_string(HTML, symbol=symbol, period=period, table=table, latest=latest, error=error)
