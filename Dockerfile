@@ -7,4 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD streamlit run railway_app.py --server.port=\ --server.address=0.0.0.0 --server.enableCORS=false --server.enableXsrfProtection=false
+ENV STREAMLIT_SERVER_PORT=$PORT
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+ENV STREAMLIT_SERVER_ENABLECORS=false
+ENV STREAMLIT_SERVER_ENABLEXSRFPROTECTION=false
+
+CMD ["streamlit", "run", "railway_app.py"]
